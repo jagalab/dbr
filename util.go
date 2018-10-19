@@ -139,3 +139,40 @@ func (s *tagStore) findValueByName(value reflect.Value, name []string, ret []int
 		}
 	}
 }
+
+func structMap(t reflect.Type) map[string][]int {
+	m := make(map[string][]int)
+	structTraverse(m, t, nil)
+	return m
+}
+
+func structTraverse(m map[string][]int, t reflect.Type, head []int) {
+	if t.Implements(typeValuer) {
+		return
+	}
+	switch t.Kind() {
+	case reflect.Ptr:
+		structTraverse(m, t.Elem(), head)
+	case reflect.Struct:
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			if field.PkgPath != "" && !field.Anonymous {
+				// unexported
+				continue
+			}
+			tag := field.Tag.Get("db")
+			if tag == "-" {
+				// ignore
+				continue
+			}
+			if tag == "" {
+				// no tag, but we can record the field name
+				tag = camelCaseToSnakeCase(field.Name)
+			}
+			if _, ok := m[tag]; !ok {
+				m[tag] = append(head, i)
+			}
+			structTraverse(m, field.Type, append(head, i))
+		}
+	}
+}
