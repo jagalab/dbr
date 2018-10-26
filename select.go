@@ -29,6 +29,10 @@ type SelectStmt struct {
 	OffsetCount int64
 }
 
+func (sel *SelectStmt) GetRaw() string {
+	return sel.raw.Query
+}
+
 type SelectBuilder = SelectStmt
 
 func (b *SelectStmt) Build(d Dialect, buf Buffer) error {
